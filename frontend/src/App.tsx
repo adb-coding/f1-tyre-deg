@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, Activity, Check, Flag, Info, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { SidebarDriver, SidebarRace } from "./components/SideBar";
 import { TyreDegradationChart } from "./components/TyreDegradationCharts";
 import { TelemetryChart } from "./components/TelemetryCharts";
@@ -30,8 +30,8 @@ function App() {
             getTyreDegradation(year, round, driver).then(setData).finally(() => setLoading(false))
         }, [year, round, driver]);
         
-        // if (loading) return <p>Loading...</p>;
-        // if (!data) return <p>No data</p>;
+        if (loading) return <p>Loading...</p>;
+        if (!data) return <p>No data</p>;
 
         useEffect(() => {
             getDriverPoint(year, round)

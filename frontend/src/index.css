@@ -133,7 +133,7 @@ body {
     justify-content: space-between;
     border: 1px solid var(--line);
     width: 100%;
-    padding: var(--space-2 --space-2);
+    padding: var(--space-2, --space-2);
     background: var(--bg-panel);
     font-family: var(--font-mono);
     color: var(--text);

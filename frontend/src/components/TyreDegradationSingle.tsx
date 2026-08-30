@@ -1,4 +1,4 @@
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, LineChart, ResponsiveContainer, type LegendPayload } from "recharts";
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, LineChart, ResponsiveContainer } from "recharts";
 import { useEffect, useState, type CSSProperties } from "react";
 import { getTyreDegradation } from "../api/client";
 import type { DegradationResult, DriverPoint } from "../types/f1";
@@ -124,8 +124,8 @@ export function TyreDegradationChartSingle({ year, round, driver, driverData }
                                         fontSize: "9px",
                                     }}
                                     labelStyle={{ color: "var(--text-muted)"}}
-                                    labelFormatter={(value: number) => `${(Math.round(value/100)*100).toFixed(0)}`}   
-                                    formatter={(value: number) => formatLapTime(value)}/>
+                                    labelFormatter={(value) => `${(Math.round(Number(value)/100)*100).toFixed(0)}`}   
+                                    formatter={(value) => formatLapTime(Number(value))}/>
                                     <Legend 
                                     wrapperStyle={customLegend}/>
                                     {compunds.map((compound) => (
@@ -153,8 +153,8 @@ export function TyreDegradationChartSingle({ year, round, driver, driverData }
                                         fontSize: "11px",
                                     }}
                                     labelStyle={{ color: "var(--text-muted)" }}
-                                    labelFormatter={(value: number) => `Lap : ${value}`}
-                                    formatter={(value: number) => `Time : ${formatLapTime(value)}`} />
+                                    labelFormatter={(value) => `Lap : ${value}`}
+                                    formatter={(value) => `Time : ${formatLapTime(Number(value))}`} />
                                     <Legend 
                                     wrapperStyle={customLegend}/>
                                     {compunds.map((compound) => (

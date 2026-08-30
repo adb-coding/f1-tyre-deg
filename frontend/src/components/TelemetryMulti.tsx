@@ -16,8 +16,8 @@ type ViewMode = 'Speed' | 'Gear' | 'Throttle' | 'RPM'
 const VIEW_CONFIG: Record<ViewMode, {dataKey: string; name: string; formatter: (v: number) => string}> = {
     Speed: { dataKey: "Speed", name: "Speed", formatter: (v) => `${v.toFixed(1)} km/h` },
     Gear: { dataKey: "nGear", name: "Gear", formatter: (v) => `${Math.round(v)}`},
-    Throttle: { dataKey: "Throttle", name: "Throttle", formatter: (v) => {v}},
-    RPM: { dataKey: "RPM", name: 'RPM', formatter: (v) => (v)},
+    Throttle: { dataKey: "Throttle", name: "Throttle", formatter: (v) => `${v.toFixed(2)}`},
+    RPM: { dataKey: "RPM", name: 'RPM', formatter: (v) => `${v}`},
 }
 
 export function TelemetryChartMulti({ year, round, drivers, driverData}:{ year: number; round: number; drivers: string[]; driverData: DriverPoint[] | null; }) {
@@ -66,7 +66,7 @@ export function TelemetryChartMulti({ year, round, drivers, driverData}:{ year: 
                                     fontSize: "9px",
                          }}
                         labelStyle={{ color: "var(--text-muted)"}}   
-                        formatter={(value: number) => config.formatter(value)}
+                        formatter={(value) => config.formatter(Number(value))}
                         />
                         <Legend 
                         wrapperStyle={customLegend}

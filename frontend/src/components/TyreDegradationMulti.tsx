@@ -1,8 +1,8 @@
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, LineChart, ResponsiveContainer, type LegendPayload } from "recharts";
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, LineChart, ResponsiveContainer } from "recharts";
 import { useEffect, useState, type CSSProperties } from "react";
 import { getTyreDegradationMulti } from "../api/client";
 import type { DegradationResult, DriverPoint } from "../types/f1";
-import { Timer, Activity, MoveDownRight, CirclePause } from 'lucide-react'
+import { Timer, Activity, CirclePause } from 'lucide-react'
 
 
 
@@ -42,11 +42,6 @@ export function TyreDegradationChartMulti({ year, round, drivers, driverData }: 
     const [viewMode, setViewMode] = useState<ViewMode>('Lap Time');
     const [activeKey, setActiveKey] = useState<string | null>(null);
     
-    const COMPOUND_COLOR: Record<string, string> = {
-        SOFT: "var(--compound-soft)",
-        MEDIUM: "var(--compound-medium)",
-        HARD: "var(--compound-hard)",
-    };
     
     useEffect(() => {
         setLoading(true);
@@ -137,7 +132,7 @@ export function TyreDegradationChartMulti({ year, round, drivers, driverData }: 
                                     fontSize: "9px",
                                 }}
                                 labelStyle={{ color: "var(--text-muted)"}}   
-                                formatter={(value: number) => formatLapTime(value)}/>
+                                formatter={(value) => formatLapTime(Number(value))}/>
                                 <Legend 
                                 wrapperStyle={customLegend}
                                 onMouseEnter={(o) => setActiveKey(o.value as string)}
@@ -172,14 +167,14 @@ export function TyreDegradationChartMulti({ year, round, drivers, driverData }: 
                                         fontSize: "11px",
                                     }}
                                     labelStyle={{ color: "var(--fastest-accent)" }}
-                                    labelFormatter={(value: number) => `Lap : ${value}`}
-                                    formatter={(value: number) => `Time : ${formatLapTime(value)}`} />
+                                    labelFormatter={(value) => `Lap : ${value}`}
+                                    formatter={(value) => `Time : ${formatLapTime(Number(value))}`} />
                                     <Legend 
                                     wrapperStyle={customLegend}
                                     onMouseEnter={(o) => setActiveKey(o.value as string)}
                                     onMouseLeave={() => setActiveKey(null)}/>
                                     {driverCode.map((code) => (
-                                        <Line key={code} type="monotone" dataKey={code} name={code} dot={false} stroke={colorFor(code)} connectNulls strokeWidt={2} strokeOpacity={activeKey === null || activeKey === code ? 1 : 0.15} />
+                                        <Line key={code} type="monotone" dataKey={code} name={code} dot={false} stroke={colorFor(code)} connectNulls strokeWidth={2} strokeOpacity={activeKey === null || activeKey === code ? 1 : 0.15} />
                                     ))}
                                 </LineChart>
                             </ResponsiveContainer>

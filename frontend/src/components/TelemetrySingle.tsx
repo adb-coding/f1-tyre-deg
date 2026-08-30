@@ -15,8 +15,8 @@ type ViewMode = 'Speed' | 'Gear' | 'Throttle' | 'RPM'
 const VIEW_CONFIG: Record<ViewMode, {dataKey: string, name: string, formatter: (v: number) => string }> = {
     Speed: { dataKey: "Speed", name: "Speed", formatter: (v) => `${v.toFixed(1)} km/h` },
     Gear: { dataKey: "nGear", name: "Gear", formatter: (v) => `${Math.round(v)}`},
-    Throttle: { dataKey: "Throttle", name: "Throttle", formatter: (v: number) => {v.toFixed(2)}},
-    RPM: { dataKey: "RPM", name: 'RPM', formatter: (v: number) => (v.toFixed(2))},
+    Throttle: { dataKey: "Throttle", name: "Throttle", formatter: (v) => `${v.toFixed(2)}`},
+    RPM: { dataKey: "RPM", name: 'RPM', formatter: (v) => (v.toFixed(2))},
 }
 
 export function TelemetryChartSingle({ year, round, driver, driverData }:{ year: number; round: number; driver: string, driverData: DriverPoint[] | null; }){    
@@ -25,11 +25,6 @@ export function TelemetryChartSingle({ year, round, driver, driverData }:{ year:
     const [data, setData] = useState<DegradationResult | null>(null);
     const [loading, setLoading] = useState(true);
     
-
-    function formatSpeed(Speed: number): string {
-        const speed = (Math.round(Speed * 100) / 100).toFixed(2)
-        return `${speed} km/h`
-    }
 
     function formatDistance(Distance: number): string {
         const distance = (Math.round(Distance * 100) / 100).toFixed(2)
@@ -82,8 +77,8 @@ export function TelemetryChartSingle({ year, round, driver, driverData }:{ year:
                                     fontSize: "9px",
                                 }}
                                 labelStyle={{ color: "var(--fastest-accent)"}}
-                                formatter={(value: number) => {config.formatter(value)}}
-                                labelFormatter={(value: number) => `Distance : ${formatDistance(value)} m`} 
+                                formatter={(value) => {config.formatter(Number(value))}}
+                                labelFormatter={(value) => `Distance : ${formatDistance(Number(value))} m`} 
                                 />
                                 <Legend 
                                 wrapperStyle={customLegend}/>
