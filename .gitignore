@@ -10,7 +10,8 @@ wheels/
 .venv
 
 # Cache files
-backend/cache/
+backend/cache/*
+!backend/cache/.gitkeep
 
 # Environment variables
 .env
