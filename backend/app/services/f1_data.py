@@ -1,3 +1,4 @@
+import os
 import fastf1
 import pandas as pd
 import numpy as np
@@ -5,7 +6,9 @@ from matplotlib.cbook import boxplot_stats
 from functools import lru_cache
 from sklearn.linear_model import LinearRegression
 
-fastf1.Cache.enable_cache('./cache')
+CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'cache')
+os.makedirs(CACHE_DIR, exist_ok=True)
+fastf1.Cache.enable_cache(CACHE_DIR)
 
 compound_color = {
     'SOFT':'red',
