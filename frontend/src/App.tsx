@@ -12,7 +12,6 @@ import { DriverMultiSelect } from "./components/DriverMultiSelect";
 function App() {
 
     const [collapsed, setCollapsed] = useState(false);
-    const [loading, setLoading] = useState(true)
     const [rightCollapsed, setRightCollapsed] = useState(false);
     const [mode, setMode] = useState<"single" | "compare">("single");
     const [compareDriver, setCompareDriver] = useState<string[]>(["HAM","VER"])
@@ -26,12 +25,9 @@ function App() {
 
     
         useEffect(() => {
-            setLoading(true)
-            getTyreDegradation(year, round, driver).then(setData).finally(() => setLoading(false))
+            getTyreDegradation(year, round, driver).then(setData)
         }, [year, round, driver]);
         
-        if (loading) return <p>Loading...</p>;
-        if (!data) return <p>No data</p>;
 
         useEffect(() => {
             getDriverPoint(year, round)
