@@ -1,0 +1,5 @@
+{$DOMAIN} {
+	# Caddy fetches + auto-renews a Let's Encrypt cert for $DOMAIN,
+	# then proxies all traffic to the backend container on port 7860.
+	reverse_proxy backend:7860
+}

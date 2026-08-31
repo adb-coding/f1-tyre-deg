@@ -8,7 +8,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://f1-tyre-deg.onrender.com"],
+    allow_origins=["http://localhost:5173", "https://f1-tyre-deg.netlify.app"],
     allow_methods=["GET","POST"],
     allow_headers=["*"],
 )
@@ -17,6 +17,10 @@ class MultiDriverRequest(BaseModel):
     year: int
     round: int
     drivers: list[str]
+
+@app.get("/")
+def root():
+    return {"status": "ok", "service": "f1-tyre-degradation-api"}
 
 @app.get("/api/tyre-degradation")
 def tyre_degradation(year: int, round: int, driver: str):

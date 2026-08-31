@@ -1,0 +1,26 @@
+# Runs on the Oracle VM: FastAPI backend + Caddy reverse proxy (auto HTTPS).
+services:
+  backend:
+    build: .                 # builds the repo-root Dockerfile
+    restart: unless-stopped
+    expose:
+      - "7860"               # internal only; reachable by caddy, not the public net
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"              # HTTP (Let's Encrypt challenge + redirect to HTTPS)
+      - "443:443"            # HTTPS
+    environment:
+      - DOMAIN=${DOMAIN}     # your public domain, e.g. f1tyredeg.duckdns.org
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data     # persists TLS certificates across restarts
+      - caddy_config:/config
+    depends_on:
+      - backend
+
+volumes:
+  caddy_data:
+  caddy_config:
