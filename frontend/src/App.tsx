@@ -11,8 +11,8 @@ import { DriverMultiSelect } from "./components/DriverMultiSelect";
 
 function App() {
 
-    const [collapsed, setCollapsed] = useState(false);
-    const [rightCollapsed, setRightCollapsed] = useState(false);
+    const [collapsed, setCollapsed] = useState(true);
+    const [rightCollapsed, setRightCollapsed] = useState(true);
     const [mode, setMode] = useState<"single" | "compare">("single");
     const [compareDriver, setCompareDriver] = useState<string[]>(["HAM","VER"])
     const [year, setYear] = useState(2026);
@@ -54,7 +54,7 @@ function App() {
             onToggleRightbar={() => setRightCollapsed((c) => !c)}
             />
             {(!collapsed || !rightCollapsed) && (
-                <div className="mobile-backdrop" onClick={() => { setCollapsed(true); setRightCollapsed(true); }} />
+                <div className="mobile-backdrop" onClick={() => { setCollapsed(false); setRightCollapsed(false); }} />
             )}
 
             <div className={`sidebar ${!collapsed ? "mobile-open" : ""}`}>

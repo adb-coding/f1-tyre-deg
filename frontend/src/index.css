@@ -78,6 +78,7 @@ body {
 .sidebar {
     grid-area: sidebar;
     border-right: 1px solid var(--line);
+    margin-top: var(--space-2);
     min-height: 0;
     overflow-y: auto;
     display: flex;
@@ -501,6 +502,8 @@ body {
         z-index: 50;
         background: var(--bg-panel);
         transition: transform .25s ease;
+        /* margin-top: 8px; */
+        padding-top: 6px;
         margin-left: 4px;
         margin-right: 4px;
     }

@@ -18,7 +18,7 @@ compound_color = {
     'WET':'blue'
 }
 
-@lru_cache(maxsize=16)
+@lru_cache(maxsize=3)
 def load_cached_session(year, gp):
     # Load the sesison data from fastf1 API
     session_data = fastf1.get_session(year=year, gp=gp, identifier='RACE')
