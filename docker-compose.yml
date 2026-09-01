@@ -9,6 +9,7 @@ services:
       # Pre-built fastf1 cache from the host (F1's live-timing API blocks the VM's
       # cloud IP, so the server reads cached sessions instead of fetching them).
       - ./backend/cache:/home/user/app/backend/cache
+    mem_limit: 4g
 
   caddy:
     image: caddy:2
