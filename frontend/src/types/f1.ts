@@ -1,3 +1,11 @@
+export interface RaceEntry{
+    round: number;
+    name: string;
+    date: string;
+}
+
+export type CachedRaces = Record<string, RaceEntry[]>
+
 export interface DegradationPoint{
     tyre_life: number;
     lap_time: number;
@@ -61,5 +69,6 @@ export interface DegradationResult{
     slope: Record<number, number>;
     intercept: Record<number, number>;
     telemetry: TelemetryPoint[];
+    turn: Record<number,number>;
     distribution: Record<string, BoxplotStats>;
 }

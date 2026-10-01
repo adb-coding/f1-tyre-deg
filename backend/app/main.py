@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.services.tyre_analysis import compute_tyre_deg, compute_tyre_deg_multi, compute_driver_data, compute_session_data, DegradationResult
-# from app.services.f1_data import load_session, clean_data
+from app.services.f1_data import get_races_cached
 
 app = FastAPI()
 
@@ -17,6 +17,8 @@ class MultiDriverRequest(BaseModel):
     year: int
     round: int
     drivers: list[str]
+
+
 
 @app.get("/")
 def root():
@@ -37,3 +39,8 @@ def driver_data(year: int, round: int):
 @app.get("/api/session-info")
 def session_info(year: int, round: int):
     return compute_session_data(year, round)
+
+
+@app.get("/api/rounds-list")
+def round_info():
+    return get_races_cached()

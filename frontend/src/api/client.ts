@@ -1,4 +1,4 @@
-import type { DegradationResult, DriverPoint, SessionInfo } from "../types/f1";
+import type { CachedRaces, DegradationResult, DriverPoint, SessionInfo } from "../types/f1";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -26,6 +26,16 @@ export async function getSessionData(
     if (!res.ok) throw new Error("Error extracting session info data");
     return res.json();
 }
+
+
+export async function getCachedRaces(
+
+): Promise<CachedRaces>{
+    const res = await fetch(`${API_BASE}/api/rounds-list`);
+    if (!res.ok) throw new Error("Error in getting cached races");
+    return res.json();
+}
+
 
 export async function getTyreDegradationMulti(
     year: number, round: number, drivers: string[]

@@ -1,4 +1,5 @@
-import type { DriverPoint } from "../types/f1";
+import type { DriverPoint, CachedRaces } from "../types/f1";
+
 
 
 interface SidebarDriverProps {
@@ -32,11 +33,13 @@ export function SidebarDriver({ driverData, selectedDriver, onSelectDriver }: Si
 interface SideBarRace {
     year: number;
     round: number;
+    races: CachedRaces | null;
     onYearChange: (year: number) => void;
     onRoundChange: (round: number) => void;
 }
 
-export function SidebarRace({ year, round, onYearChange, onRoundChange }: SideBarRace) {
+export function SidebarRace({ year, round, races, onYearChange, onRoundChange }: SideBarRace) {
+    if (!races) return <div className="sidebar__section">Loading...</div>
     return (
         <div className="sidebar__section">
             <div className="sidebar__title">Select Race</div>
@@ -44,20 +47,18 @@ export function SidebarRace({ year, round, onYearChange, onRoundChange }: SideBa
                 <span style={{ fontFamily: "var(--font-display)" }}>
                     {/* Select Round */}
                 </span>
-                    <label htmlFor="year-select">Anno</label>
+                    <label htmlFor="year-select">Year</label>
                         <select id="year-select" value={year} onChange={(e) => onYearChange(Number(e.target.value))}>
-                            <option value={2024}>2024</option>
-                            <option value={2025}>2025</option>
-                            <option value={2026}>2026</option>
+                            {Object.keys(races).map((y) => 
+                            <option key={y} value={y}>{y}</option>)}
                         </select>
                     <label htmlFor="round-input">Round</label>
-                        <input id="round-input" 
-                        type="number"
-                        min={1}
-                        max={24}
-                        value={round}
-                        onChange={(e) => onRoundChange(Number(e.target.value))}
-                        />
+                        <select  id="round-input" value={round}
+                        onChange={(e) => onRoundChange(Number(e.target.value))}>
+                        {races[String(year)]?.map((r) => (
+                            <option key={r.round} value={r.round}>{r.name}</option>
+                        ))}
+                        </select>
             </div>
         </div>
     )

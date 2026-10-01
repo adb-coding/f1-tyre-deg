@@ -1,6 +1,8 @@
-from app.services.f1_data import load_cached_session, clean_data, fuel_correction, fit_regression, extract_telemetry, extract_drivers_info, extract_weather, extract_session, extract_race_results, calculate_boxplot_by_compound
+from app.services.f1_data import load_cached_session, clean_data, fuel_correction, fit_regression, extract_telemetry, extract_drivers_info, extract_weather, extract_session, extract_race_results, calculate_boxplot_by_compound, extract_turns_position
 from pydantic import BaseModel
 import pandas as pd
+
+
 
 class DegradationPoint(BaseModel):
     tyre_life: int
@@ -67,6 +69,7 @@ class DegradationResult(BaseModel):
     slope: dict[int, float]
     intercept: dict[int, float]
     telemetry: list[TelemetryPoint]
+    turns: list[float]
     distribution: dict[str, BoxplotStats]
 
 
@@ -75,6 +78,7 @@ def compute_tyre_deg(session_year: int, session_round: int, driver: str) -> Degr
     session = load_cached_session(session_year, session_round)
     laps = clean_data(session, driver)
     TelemetryData = extract_telemetry(laps, driver)
+    turns = extract_turns_position(session)
     laps = fuel_correction(laps)
     intercepts, slopes = fit_regression(laps)
     distribution = calculate_boxplot_by_compound(laps)
@@ -93,12 +97,14 @@ def compute_tyre_deg(session_year: int, session_round: int, driver: str) -> Degr
         slope=slopes,
         intercept=intercepts,
         telemetry=TelemetryData,
+        turns=turns,
         distribution=distribution
     )
 
 
 def compute_tyre_deg_multi(session_year: int, session_round: int, drivers: list[str]) -> dict[str, DegradationResult]:
     session = load_cached_session(session_year, session_round)
+    turns = extract_turns_position(session)
     results = {}
     for driver in drivers:
         laps = clean_data(session, driver)
@@ -119,6 +125,7 @@ def compute_tyre_deg_multi(session_year: int, session_round: int, drivers: list[
             slope=slopes,
             intercept=intercepts,
             telemetry=TelemetryData,
+            turns=turns,
             distribution=distribution
         )
 
@@ -146,3 +153,5 @@ def compute_session_data(session_year: int, session_round: int) -> SessionData:
         Info=session_info,
         Results=results
     )
+
+

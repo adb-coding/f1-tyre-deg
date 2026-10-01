@@ -5,6 +5,7 @@ import numpy as np
 from matplotlib.cbook import boxplot_stats
 from functools import lru_cache
 from sklearn.linear_model import LinearRegression
+from pydantic import BaseModel
 
 CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'cache')
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -18,6 +19,10 @@ compound_color = {
     'WET':'blue'
 }
 
+class CachedRaces(BaseModel):
+    cached_races: dict[str, list]
+
+
 @lru_cache(maxsize=3)
 def load_cached_session(year, gp):
     # Load the sesison data from fastf1 API
@@ -26,6 +31,35 @@ def load_cached_session(year, gp):
 
     return session_data
     
+
+def get_races_cached():
+    # extract the number of races cached in the folder
+    years = os.listdir(CACHE_DIR)
+    rounds_per_year = {}
+    for year in years: 
+        CACHE_DIR_YEAR = os.path.join(CACHE_DIR, str(year))
+        if os.path.isdir(CACHE_DIR_YEAR):
+            rounds_per_year.update({year : os.listdir(CACHE_DIR_YEAR)})
+
+    years = list(rounds_per_year.keys())
+
+    # get the round number for each race cached
+
+    gp_round_dict = {}
+    for year in rounds_per_year.keys(): 
+        race_list = []
+        race_calendar = fastf1.get_event_schedule(int(year))[['EventDate','RoundNumber']]
+        for race in rounds_per_year.get(year):
+            date = race.split('_')[0]
+            name = race.split('_')[1:]
+            name = " ".join(name)
+            round_number = int(race_calendar.loc[race_calendar['EventDate'] == date]['RoundNumber'].reset_index(drop=True).iloc[0])
+            race_list.append({'round':round_number, 'name':name, 'date':date})
+
+        gp_round_dict.update({year : race_list})
+        
+    return gp_round_dict  
+
 
 def clean_data(session, driver):
     # Remove laps that include pit-stops and SC/VSC or yellow flag 
@@ -44,6 +78,12 @@ def extract_telemetry(laps, driver):
         telemetry_data[["Distance","Speed","Throttle","nGear","RPM","X","Y"]].to_dict(orient="records")
         )
     return telemetry_data
+
+
+def extract_turns_position(session):
+    # Extract the turn position
+    turns = session.get_circuit_info().corners.Distance
+    return turns
 
 
 def extract_drivers_info(session):

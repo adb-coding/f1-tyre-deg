@@ -3,8 +3,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { SidebarDriver, SidebarRace } from "./components/SideBar";
 import { TyreDegradationChart } from "./components/TyreDegradationCharts";
 import { TelemetryChart } from "./components/TelemetryCharts";
-import type { SessionInfo, DriverPoint, DegradationResult } from "./types/f1";
-import { getDriverPoint, getSessionData, getTyreDegradation } from "./api/client";
+import type { SessionInfo, DriverPoint, DegradationResult, CachedRaces } from "./types/f1";
+import { getCachedRaces, getDriverPoint, getSessionData, getTyreDegradation } from "./api/client";
 import { RightSideBar } from "./components/RightSideBar";
 import { TopBar } from "./components/TopBar";
 import { DriverMultiSelect } from "./components/DriverMultiSelect";
@@ -21,24 +21,37 @@ function App() {
     const [data, setData] = useState<DegradationResult | null>(null);
     const [driverData, setDriverData] = useState<DriverPoint[] | null>(null);
     const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
+    const [races, setRaces] = useState<CachedRaces | null>(null); 
     // const [data, setData] = useState<DegradationResult | null>(null);
 
     
         useEffect(() => {
-            getTyreDegradation(year, round, driver).then(setData)
+            let cancelled = false;
+            setData(null);
+            getTyreDegradation(year, round, driver).then((d) => { if (!cancelled) setData(d); });
+            return () => { cancelled = true; }; 
         }, [year, round, driver]);
         
-
         useEffect(() => {
-            getDriverPoint(year, round)
-            .then(setDriverData);
+            getDriverPoint(year, round).then(setDriverData);
         }, [year, round]);
 
         useEffect(() => {
-            getSessionData(year, round).then(setSessionInfo)
+            let cancelled = false;
+            setSessionInfo(null);
+            getSessionData(year, round).then((d) => { if (!cancelled) setSessionInfo(d); });
+            return () => { cancelled = true; };
         }, [year, round]);
 
+        useEffect(() => {
+            getCachedRaces().then(setRaces);
+        }, []);
 
+        function handleYearChange(y: number) {
+            setYear(y);
+            const first = races?.[String(y)]?.[0];
+            if (first) setRound(first.round);
+        }
 
     return (
         <div 
@@ -66,7 +79,7 @@ function App() {
                 </button>
                 {!collapsed && (
                     <>
-                        <SidebarRace year={year} round={round} onYearChange={setYear} onRoundChange={setRound}/>
+                        <SidebarRace races={races} year={year} round={round} onYearChange={handleYearChange} onRoundChange={setRound}/>
                         <div className="toggle-group">
                             <button className={`toggle-btn ${mode === "single" ? "toggle-btn--active" : ""}`} onClick={() => setMode("single")}>Single</button>
                             <button className={`toggle-btn ${mode === "compare" ? "toggle-btn--active" : ""}`} onClick={() => setMode("compare")}>Compare</button>
