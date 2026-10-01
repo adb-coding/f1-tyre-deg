@@ -69,7 +69,7 @@ class DegradationResult(BaseModel):
     slope: dict[int, float]
     intercept: dict[int, float]
     telemetry: list[TelemetryPoint]
-    turns: list[float]
+    turns: dict[int, float]
     distribution: dict[str, BoxplotStats]
 
 

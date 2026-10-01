@@ -83,7 +83,12 @@ def extract_telemetry(laps, driver):
 def extract_turns_position(session):
     # Extract the turn position
     turns = session.get_circuit_info().corners.Distance
-    return turns
+    turns_number = []
+    for i in turns.index:
+        turns_number.append(i + 1)
+
+    turns_dict = dict(zip(turns_number, turns))
+    return turns_dict
 
 
 def extract_drivers_info(session):

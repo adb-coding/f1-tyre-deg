@@ -69,6 +69,6 @@ export interface DegradationResult{
     slope: Record<number, number>;
     intercept: Record<number, number>;
     telemetry: TelemetryPoint[];
-    turn: Record<number,number>;
+    turns: Record<string, number>;
     distribution: Record<string, BoxplotStats>;
 }

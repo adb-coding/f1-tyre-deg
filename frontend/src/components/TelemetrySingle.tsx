@@ -1,4 +1,4 @@
-import { LineChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, ResponsiveContainer } from "recharts";
+import { LineChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, ResponsiveContainer, ReferenceLine } from "recharts";
 import { useEffect, useState, type CSSProperties } from "react";
 import type { DegradationResult, DriverPoint } from "../types/f1";
 import { getTyreDegradation } from "../api/client"
@@ -64,10 +64,20 @@ export function TelemetryChartSingle({ year, round, driver, driverData }:{ year:
                     <div className="chart-card">
                     {/* <h2 className="chart-card__title">Telemetry Chart</h2> */}
                         <ResponsiveContainer width="100%" height={320} style={{ margin: "6px"}}>
-                            <LineChart data={data.telemetry} syncId="telemetry-track">
+                            <LineChart data={data.telemetry} syncId="telemetry-track" margin={{ top:20, right: 10, left: 0, bottom: 0 }}>
                                 <CartesianGrid stroke="var(--line)" />
-                                <XAxis dataKey="Distance" name="Distance" tick={{ fill: "var(--text-muted)"}} domain={["dataMin","dataMax"]} tickFormatter={(value: number) => formatDistance(value)} style={{ fontSize: "11px" }}/>
+                                <XAxis type="number" dataKey="Distance" name="Distance" tick={{ fill: "var(--text-muted)"}} domain={["dataMin","dataMax"]} tickFormatter={(value: number) => formatDistance(value)} style={{ fontSize: "11px" }}/>
                                 <YAxis dataKey={config.dataKey} name={config.name} domain={["dataMin","dataMax"]} style={{ fontSize: "11px" }}/>
+                                {Object.entries(data.turns).map(([number, distance]) => (
+                                    <ReferenceLine
+                                        key={number}
+                                        x={distance}
+                                        stroke="var(--text-muted)"
+                                        strokeOpacity={0.9}
+                                        strokeDasharray="3 3"
+                                        label={{ value: `T${number}`, position: "top", fontSize: 9, fill: "var(--text-muted)" }}
+                                        />
+                                ))}
                                 <Tooltip
                                 contentStyle={{
                                     background: "var(--bg-panel)",
