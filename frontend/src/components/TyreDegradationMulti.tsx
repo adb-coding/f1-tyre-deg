@@ -45,9 +45,7 @@ function mergePositionsByLap(results: Record<string, DegradationResult>): Record
     }
     return Array.from(lapMap.values()).sort((a,b) => (a.LapNumber as number) - (b.LapNumber as number));
 }
-    interface Props {
-        LapNumber: number; Position: number
-    }
+
     
     
     export function TyreDegradationChartMulti({ year, round, drivers, driverData }: Props) {
