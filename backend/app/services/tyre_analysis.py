@@ -1,4 +1,4 @@
-from app.services.f1_data import load_cached_session, clean_data, fuel_correction, fit_regression, extract_telemetry, extract_drivers_info, extract_weather, extract_session, extract_race_results, calculate_boxplot_by_compound, extract_turns_position
+from app.services.f1_data import load_cached_session, clean_data, fuel_correction, fit_regression, extract_telemetry, extract_drivers_info, extract_weather, extract_session, extract_race_results, calculate_boxplot_by_compound, extract_turns_position, get_position
 from pydantic import BaseModel
 import pandas as pd
 
@@ -63,9 +63,15 @@ class DriverPoint(BaseModel):
     TeamName: str
 
 
+class PositionPoint(BaseModel):
+    LapNumber: int
+    Position: int
+
+
 class DegradationResult(BaseModel):
     driver: str
     points: list[DegradationPoint]
+    position: list[PositionPoint]
     slope: dict[int, float]
     intercept: dict[int, float]
     telemetry: list[TelemetryPoint]
@@ -77,6 +83,7 @@ class DegradationResult(BaseModel):
 def compute_tyre_deg(session_year: int, session_round: int, driver: str) -> DegradationResult:
     session = load_cached_session(session_year, session_round)
     laps = clean_data(session, driver)
+    position = get_position(session, driver)
     TelemetryData = extract_telemetry(laps, driver)
     turns = extract_turns_position(session)
     laps = fuel_correction(laps)
@@ -95,6 +102,7 @@ def compute_tyre_deg(session_year: int, session_round: int, driver: str) -> Degr
             stint=row.Stint
         ) for _, row in laps.iterrows()],
         slope=slopes,
+        position=position,
         intercept=intercepts,
         telemetry=TelemetryData,
         turns=turns,
@@ -108,6 +116,7 @@ def compute_tyre_deg_multi(session_year: int, session_round: int, drivers: list[
     results = {}
     for driver in drivers:
         laps = clean_data(session, driver)
+        position = get_position(session, driver)
         TelemetryData = extract_telemetry(laps, driver)
         laps = fuel_correction(laps)
         intercepts, slopes = fit_regression(laps)
@@ -122,6 +131,7 @@ def compute_tyre_deg_multi(session_year: int, session_round: int, drivers: list[
                 compound=row.Compound,
                 stint=row.Stint
             ) for _, row in laps.iterrows()],
+            position=position,
             slope=slopes,
             intercept=intercepts,
             telemetry=TelemetryData,

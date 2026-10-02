@@ -12,7 +12,7 @@ const customLegend: CSSProperties = {
     padding: '4px',
 }
 
-type ViewMode = 'Lap Time' | 'Distribution' | 'Tyre Deg'
+type ViewMode = 'Lap Time' | 'Distribution' | 'Tyre Deg' | 'History'
 
 function formatLapTime(totalSeconds: number): string {
     const minutes = Math.floor(totalSeconds / 60);
@@ -33,12 +33,26 @@ function mergeLapsByNumber(results: Record<string, DegradationResult>): Record<s
     
     interface Props {
         year: number; round: number; drivers: string[]; driverData: DriverPoint[] | null;
+    }
+
+function mergePositionsByLap(results: Record<string, DegradationResult>): Record<string, number | undefined>[]{
+    const lapMap = new Map<number, Record<string, number | undefined>>();
+    for (const [driverCode, result] of Object.entries(results)) {
+        for (const point of result.position) {
+            if (!lapMap.has(point.LapNumber)) lapMap.set(point.LapNumber, { LapNumber: point.LapNumber });
+            lapMap.get(point.LapNumber)![driverCode] = point.Position;
+        }
+    }
+    return Array.from(lapMap.values()).sort((a,b) => (a.LapNumber as number) - (b.LapNumber as number));
 }
-
-
-export function TyreDegradationChartMulti({ year, round, drivers, driverData }: Props) {
-    const [results, setResults] = useState<Record<string, DegradationResult> | null>(null);
-    const [loading, setLoading] = useState(true);
+    interface Props {
+        LapNumber: number; Position: number
+    }
+    
+    
+    export function TyreDegradationChartMulti({ year, round, drivers, driverData }: Props) {
+        const [results, setResults] = useState<Record<string, DegradationResult> | null>(null);
+        const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<ViewMode>('Lap Time');
     const [activeKey, setActiveKey] = useState<string | null>(null);
     
@@ -53,6 +67,7 @@ export function TyreDegradationChartMulti({ year, round, drivers, driverData }: 
     
     const mergedLaps = mergeLapsByNumber(results);
     const driverCode = Object.keys(results);
+    const mergedPositions = mergePositionsByLap(results);
     const colorFor = (code: string) => driverData?.find((d) => d.Abbreviation === code)?.TeamColor ?? "#999";
     
     const fastestLapByDriver = driverCode.map((code) => ({
@@ -72,7 +87,6 @@ export function TyreDegradationChartMulti({ year, round, drivers, driverData }: 
     //         slope: slopeValue
     //     })
     // }
-
 
     return (
         <div className="main">
@@ -113,6 +127,7 @@ export function TyreDegradationChartMulti({ year, round, drivers, driverData }: 
                 <button className={`toggle-btn ${viewMode === "Tyre Deg" ? "toggle-btn--active" : ""}`} onClick={() => setViewMode("Tyre Deg")}>Tyre Degradation</button>
                 <button className={`toggle-btn ${viewMode === "Lap Time" ? "toggle-btn--active" : ""}`} onClick={() => setViewMode("Lap Time")}>Lap Time</button>
                 <button className={`toggle-btn ${viewMode === "Distribution" ? "toggle-btn--active" : ""}`} onClick={() => setViewMode("Distribution")}>Distribution</button>
+                <button className={`toggle-btn ${viewMode === "History" ? "toggle-btn--active" : ""}`} onClick={() => setViewMode("History")}>History</button>
             </div>
             <div className="tyre-row">
                 {viewMode === "Tyre Deg" ? (
@@ -169,6 +184,34 @@ export function TyreDegradationChartMulti({ year, round, drivers, driverData }: 
                                     labelStyle={{ color: "var(--fastest-accent)" }}
                                     labelFormatter={(value) => `Lap : ${value}`}
                                     formatter={(value) => `Time : ${formatLapTime(Number(value))}`} />
+                                    <Legend 
+                                    wrapperStyle={customLegend}
+                                    onMouseEnter={(o) => setActiveKey(o.value as string)}
+                                    onMouseLeave={() => setActiveKey(null)}/>
+                                    {driverCode.map((code) => (
+                                        <Line key={code} type="monotone" dataKey={code} name={code} dot={false} stroke={colorFor(code)} connectNulls strokeWidth={2} strokeOpacity={activeKey === null || activeKey === code ? 1 : 0.15} />
+                                    ))}
+                                </LineChart>
+                            </ResponsiveContainer>
+                    </div>
+                ) : viewMode === "History" ? (
+                    <div className="chart-card">
+                        {/* <h2 className="chart-card__title">Laps</h2> */}
+                            <ResponsiveContainer width="100%" height={320}>
+                                <LineChart data={mergedPositions}>
+                                    <CartesianGrid stroke="var(--line)"/>
+                                    <XAxis dataKey="LapNumber" name="Lap Number" style={{ fontSize: "11px" }}/>
+                                    <YAxis reversed domain={[1, 20]} allowDecimals={false} style={{ fontSize: "11px" }}/>
+                                    <Tooltip
+                                    contentStyle={{
+                                        background: "var(--bg-panel)",
+                                        border: "1px solid var(--line)",
+                                        borderRadius: "var(--radius)",
+                                        fontFamily: "var(--font-mono)",
+                                        fontSize: "11px",
+                                    }}
+                                    labelStyle={{ color: "var(--fastest-accent)" }}
+                                    labelFormatter={(value) => `P${value}`} />
                                     <Legend 
                                     wrapperStyle={customLegend}
                                     onMouseEnter={(o) => setActiveKey(o.value as string)}

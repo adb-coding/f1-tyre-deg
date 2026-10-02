@@ -63,9 +63,16 @@ export interface BoxplotStats{
     fliers: number[];
 }
 
+
+export interface PositionPoint{
+    LapNumber: number;
+    Position: number;
+}
+
 export interface DegradationResult{
     driver: string;
     points: DegradationPoint[];
+    position: PositionPoint[];
     slope: Record<number, number>;
     intercept: Record<number, number>;
     telemetry: TelemetryPoint[];

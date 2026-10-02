@@ -12,7 +12,7 @@ const customLegend: CSSProperties = {
     padding: '4px',
 }
 
-type ViewMode = 'Lap Time' | 'Distribution' | 'Tyre Deg'
+type ViewMode = 'Lap Time' | 'Distribution' | 'Tyre Deg' |'History'
 
 export function TyreDegradationChartSingle({ year, round, driver, driverData }
     :{ year: number; round: number; driver: string; driverData: DriverPoint[] | null; }){
@@ -105,6 +105,7 @@ export function TyreDegradationChartSingle({ year, round, driver, driverData }
                         <button className={`toggle-btn ${viewMode === "Tyre Deg" ? "toggle-btn--active" : ""}`} onClick={() => setViewMode("Tyre Deg")}>Tyre Degradation</button>
                         <button className={`toggle-btn ${viewMode === "Lap Time" ? "toggle-btn--active" : ""}`} onClick={() => setViewMode("Lap Time")}>Lap Time</button>
                         <button className={`toggle-btn ${viewMode === "Distribution" ? "toggle-btn--active" : ""}`} onClick={() => setViewMode("Distribution")}>Distribution</button>
+                        <button className={`toggle-btn ${viewMode === "History" ? "toggle-btn--active" : ""}`} onClick={() => setViewMode("History")}>Race History</button>
                 </div>
                 <div className="tyre-row">
                     
@@ -161,6 +162,25 @@ export function TyreDegradationChartSingle({ year, round, driver, driverData }
                                         <Line key={compound} type="monotone"  dataKey={compound} name={compound} dot={false} connectNulls={false} strokeWidth={2} stroke={COMPOUND_COLOR[compound] ?? "var(--accent-fastest)"} isAnimationActive={false} />
                                         
                                     ))}
+                                </LineChart>
+                            </ResponsiveContainer>
+                        ) : viewMode === "History" ? (
+                            <ResponsiveContainer width="100%" height={320}>
+                                <LineChart data={data.position}>
+                                    <CartesianGrid stroke="var(--line)"/>
+                                    <XAxis dataKey="LapNumber" name="Lap Number" style={{ fontSize: "11px" }}/>
+                                    <YAxis dataKey="Position" reversed domain={[1, 20]} allowDecimals={false} style={{ fontSize: "11px" }}/>
+                                    <Tooltip
+                                    contentStyle={{
+                                        background: "var(--bg-panel)",
+                                        border: "1px solid var(--line)",
+                                        borderRadius: "var(--radius)",
+                                        fontFamily: "var(--font-mono)",
+                                        fontSize: "11px",
+                                    }}
+                                    labelStyle={{ color: "var(--text-muted)" }}
+                                    labelFormatter={(value) => `Lap : ${value}`} />
+                                    <Line dataKey="Position" type="monotone" stroke={lineColor} strokeWidth={2}></Line>
                                 </LineChart>
                             </ResponsiveContainer>
                         ) : (

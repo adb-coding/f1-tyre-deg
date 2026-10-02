@@ -204,4 +204,9 @@ def fit_regression(laps):
     return intercepts, slope 
     
 
+def get_position(session, driver):
+    laps = session.laps.pick_drivers(driver)[['LapNumber','Position']].dropna()
+    laps = laps.astype(int).to_dict('records')
+    
+    return laps
 
