@@ -1,8 +1,9 @@
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.services.tyre_analysis import compute_tyre_deg, compute_tyre_deg_multi, compute_driver_data, compute_session_data, DegradationResult
-from app.services.f1_data import get_races_cached
+from app.services.f1_data import get_races_cached, SessionDataUnavailable
 
 app = FastAPI()
 
@@ -12,6 +13,11 @@ app.add_middleware(
     allow_methods=["GET","POST"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(SessionDataUnavailable)
+def session_unavailable(request, exc):
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
+
 
 class MultiDriverRequest(BaseModel):
     year: int

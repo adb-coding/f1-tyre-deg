@@ -6,6 +6,7 @@ from matplotlib.cbook import boxplot_stats
 from functools import lru_cache
 from sklearn.linear_model import LinearRegression
 from pydantic import BaseModel
+from fastf1.exceptions import DataNotLoadedError
 
 CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'cache')
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -19,6 +20,15 @@ compound_color = {
     'WET':'blue'
 }
 
+class SessionDataUnavailable(RuntimeError):
+    """fastf1 could not load the session (no cache and download failed)."""
+
+
+def _has_data(path):
+    # a race folder counts as cached only if it really contains files
+    return any(files for _, _, files in os.walk(path))
+
+
 class CachedRaces(BaseModel):
     cached_races: dict[str, list]
 
@@ -28,6 +38,15 @@ def load_cached_session(year, gp):
     # Load the sesison data from fastf1 API
     session_data = fastf1.get_session(year=year, gp=gp, identifier='RACE')
     session_data.load()
+
+    # fastf1 does not raise when a download fails: it only logs "Failed to load ..."
+    # and the error shows up later as DataNotLoadedError. Check it here instead.
+    try:
+        session_data.laps
+    except DataNotLoadedError as e:
+        raise SessionDataUnavailable(
+            f"Race data for {year} round {gp} is not available (not in cache and the download failed)"
+        ) from e
 
     return session_data
     
@@ -39,7 +58,9 @@ def get_races_cached():
     for year in years: 
         CACHE_DIR_YEAR = os.path.join(CACHE_DIR, str(year))
         if os.path.isdir(CACHE_DIR_YEAR):
-            rounds_per_year.update({year : os.listdir(CACHE_DIR_YEAR)})
+            races = [r for r in os.listdir(CACHE_DIR_YEAR)
+                     if _has_data(os.path.join(CACHE_DIR_YEAR, r))]
+            rounds_per_year.update({year : races})
 
     years = list(rounds_per_year.keys())
 
