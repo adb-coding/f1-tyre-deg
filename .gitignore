@@ -21,3 +21,4 @@ backend/cache/*
 # Notebook
 main.ipynb
 .ipynb_checkpoints/
+backend/app/diagnose_fastf1.py
