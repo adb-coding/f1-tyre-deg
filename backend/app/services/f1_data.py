@@ -77,9 +77,11 @@ def get_races_cached():
             round_number = int(race_calendar.loc[race_calendar['EventDate'] == date]['RoundNumber'].reset_index(drop=True).iloc[0])
             race_list.append({'round':round_number, 'name':name, 'date':date})
 
+        race_list.sort(key=lambda r: r['round'])
         gp_round_dict.update({year : race_list})
         
-    return gp_round_dict  
+    # years in ascending order too (listdir order is arbitrary)
+    return dict(sorted(gp_round_dict.items()))
 
 
 def clean_data(session, driver):
