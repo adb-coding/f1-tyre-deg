@@ -1,4 +1,4 @@
-import type { CachedRaces, DegradationResult, DriverPoint, SessionInfo } from "../types/f1";
+import type { CachedRaces, DegradationResult, DriverPoint, SessionInfo, Gap } from "../types/f1";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -46,5 +46,18 @@ export async function getTyreDegradationMulti(
         body: JSON.stringify({ year, round, drivers }),
     });
     if (!res.ok) throw new Error("Error comparing drivers");
+    return res.json()
+}
+
+
+export async function getGap(
+    year: number, round: number, drivers: string[]
+) : Promise<Gap>{
+    const res = await fetch(`${API_BASE}/api/gap`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ year, round, drivers}),
+    });
+    if (!res.ok) throw new Error("Error getting drivers gaps");
     return res.json()
 }

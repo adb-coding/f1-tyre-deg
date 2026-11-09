@@ -1,8 +1,9 @@
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, LineChart, ResponsiveContainer } from "recharts";
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, LineChart, ResponsiveContainer, ReferenceLine } from "recharts";
 import { useEffect, useState, type CSSProperties } from "react";
-import { getTyreDegradationMulti } from "../api/client";
-import type { DegradationResult, DriverPoint } from "../types/f1";
-import { Timer, Activity, CirclePause } from 'lucide-react'
+import { getTyreDegradationMulti, getGap } from "../api/client";
+import { COMPOUND_COLOR } from "./compounds";
+import type { DegradationResult, DriverPoint, Gap } from "../types/f1";
+import { Timer, Activity, CirclePause, MoveDownRight } from 'lucide-react'
 
 
 
@@ -12,7 +13,7 @@ const customLegend: CSSProperties = {
     padding: '4px',
 }
 
-type ViewMode = 'Lap Time' | 'Distribution' | 'Tyre Deg' | 'History'
+type ViewMode = 'Lap Time' | 'Gap' | 'Tyre Deg' | 'History'
 
 function formatLapTime(totalSeconds: number): string {
     const minutes = Math.floor(totalSeconds / 60);
@@ -53,15 +54,29 @@ function mergePositionsByLap(results: Record<string, DegradationResult>): Record
         const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<ViewMode>('Lap Time');
     const [activeKey, setActiveKey] = useState<string | null>(null);
-    
+    const [gap, setGap] = useState<Gap | null>(null);
+    const [error, setError] = useState(false)
     
     useEffect(() => {
+        let cancelled = false;
         setLoading(true);
-        getTyreDegradationMulti(year, round, drivers).then(setResults).finally(() => setLoading(false));
+        setResults(null);
+        setError(false);
+        getTyreDegradationMulti(year, round, drivers)
+            .then((d) => { if (!cancelled) setResults(d); })
+            .catch((e) => { console.error(e); if (!cancelled) setError(true); })
+            .finally(() => { if (!cancelled) setLoading(false); });
+        return () => { cancelled = true; }; 
+    }, [year, round, drivers]);
+
+    useEffect(() => {
+        let cancelled = false;
+        getGap(year, round, drivers).then((g) => {if (!cancelled) setGap(g)}).catch(() => {if (!cancelled) setGap(null)});
+        return () => {cancelled = true; };
     }, [year, round, drivers]);
     
     if (loading) return <p>Loading...</p>;
-    if (!results) return <p>No data</p>;
+    if (!results) return <p>Data not available for this race</p>;
     
     const mergedLaps = mergeLapsByNumber(results);
     const driverCode = Object.keys(results);
@@ -74,38 +89,60 @@ function mergePositionsByLap(results: Record<string, DegradationResult>): Record
        time: Math.min(...results[code].points.map((p) => p.lap_time)), 
     })).sort((a, b) => a.time - b.time);
 
-    // const computeDegradatoinByStint(result: DegradationResult) {
-    //     const stintCompound: Record<number, string> = {};
-    //     result.points.forEach((p) => {
-    //         if (!(p.stint in stintCompound)) stintCompound[p.stint] = p.compound;
-    //     });
-    //     return Object.entries(result.slope).map(([stintStr, slopeValue]) => {
-    //         stint: Number(stintStr),
-    //         compound: stintCompound[Number(stintStr)] ?? "N/D",
-    //         slope: slopeValue
-    //     })
-    // }
+    const MIN_STINT_LAPS = 5;
+
+    const avgLapTime = driverCode.map((code) => {
+        const times = results[code].points.map((p) => p.lap_time);
+        return { code, color: colorFor(code),
+            time: times.length ? times.reduce((a, b) => a+b, 0) / times.length : null 
+        };
+    });
+
+    const degradationByDriver = driverCode.map((code) => {
+        const { slope, points } = results[code];
+        const cleanLaps = new Map<number, number>();
+        points.forEach((p) => cleanLaps.set(p.stint, (cleanLaps.get(p.stint) ?? 0) + 1));
+        let num = 0, den = 0;
+        Object.entries(slope).forEach(([stint, s]) => {
+            const n = cleanLaps.get(Number(stint)) ?? 0;
+            if (n >= MIN_STINT_LAPS) {num += s * n; den += n; } 
+        });
+        return { code, color: colorFor(code), slope: den ? num / den : null };
+    });
 
     return (
         <div className="main">
             <div className="stat-row">
-                    {/* <div className="stat-card"> */}
-                        {/* <span className="stat-card__label"><MoveDownRight size="18px"/> Degradation Coeff.</span>
-                        {driverCode.map((code) => (
-                            <div className="stat-card__row">
-                            {/* <span className="stat-card__dot" style={{ background: COMPOUND_COLOR[compound] ?? "#999" }}></span> */}
-                            {/* <span className="stat_card__compound" style={{ color: COMPOUND_COLOR[compound] ?? "var(--text)" }}>{compound}</span> */}
-                            {/* <span className="stat_card__value">{(Math.round(results[code].slope[0] * 1000) / 1000).toFixed(3)}</span> */}
-                            {/* </div> */}
-                        {/* ))} */} 
-                    {/* </div> */}
+                    <div className="stat-card">
+                        <span className="stat-card__label"><MoveDownRight size="18px"/> Degradation Coeff.</span>
+                        {degradationByDriver.map(({ code, color, slope}) => (
+                            <div key={code} className="stat-card__row">
+                            <span className="stat-card__dot" style={{ background: color, width: "6px", height: "6px", margin: "4px" }}></span>
+                            <span className="stat_card__compound" style={{ marginRight: "4px" }}>{code}</span>
+                            <span className="stat_card__value">
+                                {slope === null ? "n/a" : `${slope >= 0 ? "+" : ""}${slope.toFixed(3)} s/lap`}
+                            </span>
+                            </div>
+                            ))};
+                    </div> 
                     <div className="stat-card">
                         <span className="stat-card__label"><CirclePause size="18px"/> Number of stints</span>
-                        <span className="stat-card__big" >totalStints</span>
+                        {driverCode.map((code) => (
+                            <div key={code} className="stat-card__row" style={{ alignItems: "center", flexWrap: "wrap" }}>
+                                <span className="stat-card__dot" style={{ background: colorFor(code), width: "6px", height: "6px", margin: "4px" }} />
+                                <span className="stat-card__compound"  style={{ marginRight: "4px"}} >{code}</span>
+                                <span className="stat-card__value" style={{ marginRight: "8px" }}>{results[code].stints.length}</span>
+                                {results[code].stints.map((s) => (
+                                    <span key={s.stints} style={{ color: COMPOUND_COLOR[s.compound] ?? "var(--text)", marginRight: "6px" }}>
+                                        {s.compound[0]}{s.laps}
+                                    </span>
+                                ))}
+                            </div>
+                        ))}
                         </div>
                     <div className="stat-card">
                         <span className="stat-card__label"><Timer size="18px"/> Fastest Lap</span>
-                        {fastestLapByDriver.slice(0,2).map(({ code, color, time}) => (
+                        {fastestLapByDriver.map(({ code, color, time}) => (
                             <div key={code} className="stat-card__row">
                                 <span className="stat-card__dot" 
                                 style={{background: color, width: "6px", height: "6px", margin: "4px"}} />
@@ -116,15 +153,22 @@ function mergePositionsByLap(results: Record<string, DegradationResult>): Record
                         </div>
                     <div className="stat-card">
                         <span className="stat-card__label"><Activity size="18px"/> Average Lap</span>
-                        {/* <span className="stat-card__big" style={{ color: "var(--accent-pb)" }}>{formatLapTime(avgLapTime)}</span> */}
+                        {avgLapTime.map(({ code, color, time }) => (
+                            <div key={code} className="stat-card__row">
+                                <span className="stat-card__dot" style={{ background: color, width: "6px", height: "6px", margin: "4px"}}></span>
+                                <span className="stat-card__compound" style={{ marginRight: "4px"}}>{code}</span>
+                                <span className="stat-card__value">{time === null ? "n/a" : formatLapTime(time)}</span>
+                            </div>
+                        ))}
                     </div>
+
 
             </div>
 
             <div className="toggle-group">
                 <button className={`toggle-btn ${viewMode === "Tyre Deg" ? "toggle-btn--active" : ""}`} onClick={() => setViewMode("Tyre Deg")}>Tyre Degradation</button>
                 <button className={`toggle-btn ${viewMode === "Lap Time" ? "toggle-btn--active" : ""}`} onClick={() => setViewMode("Lap Time")}>Lap Time</button>
-                <button className={`toggle-btn ${viewMode === "Distribution" ? "toggle-btn--active" : ""}`} onClick={() => setViewMode("Distribution")}>Distribution</button>
+                <button className={`toggle-btn ${viewMode === "Gap" ? "toggle-btn--active" : ""}`} onClick={() => setViewMode("Gap")}>Gap</button>
                 <button className={`toggle-btn ${viewMode === "History" ? "toggle-btn--active" : ""}`} onClick={() => setViewMode("History")}>History</button>
             </div>
             <div className="tyre-row">
@@ -222,7 +266,35 @@ function mergePositionsByLap(results: Record<string, DegradationResult>): Record
                     </div>
 
                 ) : (
-                    <div className="chart-title">Incoming</div>
+                    <div className="chart-card">
+                        {!gap || gap.rows.length === 0 ? (
+                            <p>Select at least two drivers to see the gap</p>
+                        ) : (
+                            <ResponsiveContainer width="100%" height={320}>
+                                <LineChart data={gap.rows}>
+                                <XAxis dataKey="LapNumber" />
+                                <YAxis tickFormatter={(v) => `${v > 0 ? "+" : ""}${Number(v).toFixed(1)}s`} style={{ fontSize: "11px"}}/>
+                                <ReferenceLine y={0} stroke={colorFor(gap.reference)} label={gap.reference} />
+                                <Tooltip
+                                    contentStyle={{
+                                        background: "var(--bg-panel)",
+                                        border: "1px solid var(--line)",
+                                        borderRadius: "var(--radius)",
+                                        fontFamily: "var(--font-mono)",
+                                        fontSize: "11px",
+                                    }}
+                                    labelFormatter={(v) => `${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(3)}s`}></Tooltip>
+                                <Legend wrapperStyle={customLegend}
+                                    onMouseEnter={(o) => setActiveKey(o.value as string)}
+                                    onMouseLeave={() => setActiveKey(null)}/>
+                                {drivers.filter((c) => c !== gap.reference).map((code) => (
+                                    <Line key={code} type="monotone" dataKey={code} name={code} stroke={colorFor(code)} dot={false} strokeWidth={2} connectNulls={false} />)
+                                )}
+                                {/* {Object.keys(gap.rows[0]).filter(k => k !== "LapNumber").map(code => */}
+                                </LineChart>
+                            </ResponsiveContainer>
+                        )}
+                    </div>
                 )}
             </div>
         </div>

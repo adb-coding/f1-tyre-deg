@@ -73,9 +73,23 @@ export interface DegradationResult{
     driver: string;
     points: DegradationPoint[];
     position: PositionPoint[];
+    stints: StintInfo[];
     slope: Record<number, number>;
     intercept: Record<number, number>;
     telemetry: TelemetryPoint[];
     turns: Record<string, number>;
     distribution: Record<string, BoxplotStats>;
+}
+
+export interface Gap{
+    reference: string;
+    rows: Record<string, number | null>[];
+}
+
+export interface StintInfo{
+    stints: number;
+    compound: string;
+    startLap: number;
+    endLap: number;
+    laps: number;
 }

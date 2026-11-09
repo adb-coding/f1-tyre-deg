@@ -26,10 +26,18 @@ export function TelemetryChartMulti({ year, round, drivers, driverData}:{ year: 
     const [loading, setLoading] = useState(true)
     const [activeKey, setActiveKey] = useState<string | null>(null);
     const colorFor = (code: string) => driverData?.find((d) => d.Abbreviation === code)?.TeamColor ?? '#999';
+    const [error, setError] = useState(false);
 
     useEffect(() => {
+        let cancelled = false;
         setLoading(true);
-        getTyreDegradationMulti(year, round, drivers).then(setResults).finally(() => setLoading(false));
+        setResults(null);
+        setError(false);
+        getTyreDegradationMulti(year, round, drivers)
+            .then((d) => { if (!cancelled) setResults(d); })
+            .catch((e) => { console.error(e); if (!cancelled) setError(true); })
+            .finally(() => setLoading(false));
+        return () => { cancelled = true; };
     }, [year, round, drivers]);
 
     if (loading) return <p>Loading...</p>

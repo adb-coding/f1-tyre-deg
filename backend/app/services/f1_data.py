@@ -89,29 +89,32 @@ def clean_data(session, driver):
     laps = session.laps
     laps['LapTimeSeconds'] = laps['LapTime'].dt.total_seconds()
     # Remove the box laps and the laps with SC or VSC
-    clean_laps = laps.pick_driver(driver).pick_wo_box().pick_track_status("6", how="excludes").pick_track_status("4", how="excludes").reset_index().iloc[1:,].reset_index()
+    clean_laps = laps.pick_drivers(driver).pick_wo_box().pick_track_status("24567", how="none").reset_index().iloc[1:,].reset_index()
 
     return clean_laps
 
 
 def extract_telemetry(laps, driver):
     # Extract the telemetry of the fastest lap of the selected driver
-    telemetry_data = laps.pick_drivers(driver).pick_fastest().get_telemetry()
-    telemetry_data = (
-        telemetry_data[["Distance","Speed","Throttle","nGear","RPM","X","Y"]].to_dict(orient="records")
-        )
-    return telemetry_data
+    try:
+        telemetry_data = laps.pick_drivers(driver).pick_fastest().get_telemetry()
+    except Exception:
+        return []
+    return telemetry_data[["Distance","Speed","Throttle","nGear","RPM","X","Y"]].to_dict(orient="records")
 
 
 def extract_turns_position(session):
     # Extract the turn position
-    turns = session.get_circuit_info().corners.Distance
-    turns_number = []
-    for i in turns.index:
-        turns_number.append(i + 1)
+    try:
+        turns = session.get_circuit_info().corners.Distance
+        # turns_number = []
+        # for i in turns.index:
+        #     turns_number.append(i + 1)
 
-    turns_dict = dict(zip(turns_number, turns))
-    return turns_dict
+        # turns_dict = dict(zip(turns_number, turns))
+    except Exception:
+        return {}
+    return dict(zip([i + 1 for i in turns.index], turns))
 
 
 def extract_drivers_info(session):
@@ -212,24 +215,59 @@ def fit_regression(laps):
     # Linear regression model to estimate the slope and intercept of the degradation
     intercepts = dict()
     slope = dict()
-    # divide by the number of stints
-    n_stint = laps.Stint.nunique()
 
-    for i in range(1, n_stint + 1):
-        tyre_life = laps.loc[laps['Stint'] == i]['TyreLife'].values.reshape(len(laps.loc[laps['Stint'] == i].TyreLife), 1)
-        corrected_lap_time = laps.loc[laps['Stint'] == i]['CorrectedLapTime'].values.reshape(len(laps.loc[laps['Stint'] == i].CorrectedLapTime), 1)
+    for stint, group in laps.groupby('Stint'):
+        group = group.dropna(subset=['TyreLife','CorrectedLapTime'])
 
-        reg = LinearRegression().fit(tyre_life, corrected_lap_time)
-
-        intercepts[i] = float(reg.intercept_[0])
-        slope[i] = float(reg.coef_[0][0])
+        if len(group) < 2:
+            continue
+    
+        reg = LinearRegression().fit(group[['TyreLife']].to_numpy(dtype=float),
+                                     group['CorrectedLapTime'].to_numpy(dtype=float))
+        intercepts[int(stint)] = float(reg.intercept_)
+        slope[int(stint)] = float(reg.coef_[0])
 
     return intercepts, slope 
     
 
 def get_position(session, driver):
     laps = session.laps.pick_drivers(driver)[['LapNumber','Position']].dropna()
+    # laps['Time'] = laps['Time'].dt.total_seconds()
+    # laps['LapTime'] = laps['Time'].dt.total_seconds()
     laps = laps.astype(int).to_dict('records')
     
     return laps
 
+
+def calculate_drivers_gap(session, drivers):
+    laps = session.laps
+    laps = laps[laps['Driver'].isin(drivers)]
+
+    times = laps.assign(Seconds=laps['Time'].dt.total_seconds()).pivot(index='LapNumber', columns='Driver', values='Seconds')
+    times = times.dropna(axis=1, how='all')
+
+    res = session.results
+    res = res[res['Abbreviation'].isin(times.columns)]
+    reference = res.sort_values(by='Position').iloc[0]['Abbreviation']
+
+    gap = times.sub(times[reference], axis=0).drop(columns=reference)
+    gap = gap.dropna(how="all")
+    gap.index = gap.index.astype(int)
+
+    rows = gap.reset_index().replace({np.nan : None}).to_dict('records')
+    
+    return {"reference": reference, "rows": rows}
+
+
+def get_stints(session, driver):
+    laps = session.laps.pick_drivers(driver).dropna(subset=['Stint'])
+    stints = (laps.groupby('Stint')
+              .agg(compound=('Compound','first'),
+                start_lap=('LapNumber','min'),
+                end_lap=('LapNumber', 'max'),
+                laps=('LapNumber', 'count')).reset_index())
+    stints['Stint'] =  stints['Stint'].astype(int)
+    stints['compound'] = stints['compound'].fillna('UNKNOWN')
+    stints[['start_lap','end_lap']] = stints[['start_lap','end_lap']].astype(int)
+    
+    return stints.rename(columns={'Stint':'stint'}).to_dict('records')

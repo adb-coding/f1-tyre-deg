@@ -1,4 +1,4 @@
-from app.services.f1_data import load_cached_session, clean_data, fuel_correction, fit_regression, extract_telemetry, extract_drivers_info, extract_weather, extract_session, extract_race_results, calculate_boxplot_by_compound, extract_turns_position, get_position
+from app.services.f1_data import load_cached_session, clean_data, fuel_correction, fit_regression, extract_telemetry, extract_drivers_info, extract_weather, extract_session, extract_race_results, calculate_boxplot_by_compound, extract_turns_position, get_position, get_stints
 from pydantic import BaseModel
 import pandas as pd
 
@@ -68,16 +68,24 @@ class PositionPoint(BaseModel):
     Position: int
 
 
+class StintInfo(BaseModel):
+    stint: int
+    compound: str
+    start_lap: int
+    end_lap: int
+    laps: int
+
+
 class DegradationResult(BaseModel):
     driver: str
     points: list[DegradationPoint]
     position: list[PositionPoint]
+    stints: list[StintInfo]
     slope: dict[int, float]
     intercept: dict[int, float]
     telemetry: list[TelemetryPoint]
     turns: dict[int, float]
     distribution: dict[str, BoxplotStats]
-
 
 
 def compute_tyre_deg(session_year: int, session_round: int, driver: str) -> DegradationResult:
@@ -89,6 +97,7 @@ def compute_tyre_deg(session_year: int, session_round: int, driver: str) -> Degr
     laps = fuel_correction(laps)
     intercepts, slopes = fit_regression(laps)
     distribution = calculate_boxplot_by_compound(laps)
+    stints = get_stints(session, driver)
 
     return DegradationResult(
         driver=driver,
@@ -102,6 +111,7 @@ def compute_tyre_deg(session_year: int, session_round: int, driver: str) -> Degr
             stint=row.Stint
         ) for _, row in laps.iterrows()],
         slope=slopes,
+        stints=stints,
         position=position,
         intercept=intercepts,
         telemetry=TelemetryData,
@@ -121,6 +131,7 @@ def compute_tyre_deg_multi(session_year: int, session_round: int, drivers: list[
         laps = fuel_correction(laps)
         intercepts, slopes = fit_regression(laps)
         distribution = calculate_boxplot_by_compound(laps)
+        stints = get_stints(session, driver)
         results[driver] = DegradationResult(
             driver=driver,
             points=[DegradationPoint(
@@ -132,6 +143,7 @@ def compute_tyre_deg_multi(session_year: int, session_round: int, drivers: list[
                 stint=row.Stint
             ) for _, row in laps.iterrows()],
             position=position,
+            stints=stints,
             slope=slopes,
             intercept=intercepts,
             telemetry=TelemetryData,

@@ -24,6 +24,7 @@ export function TelemetryChartSingle({ year, round, driver, driverData }:{ year:
     const [viewMode, setViewMode] = useState<ViewMode>('Speed')
     const [data, setData] = useState<DegradationResult | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
     
 
     function formatDistance(Distance: number): string {
@@ -32,14 +33,20 @@ export function TelemetryChartSingle({ year, round, driver, driverData }:{ year:
     }
 
         useEffect(() => {
+            let cancelled = false;
             setLoading(true);
+            setData(null);
+            setError(false);
             getTyreDegradation(year, round, driver)
-            .then(setData)
-            .finally(() => setLoading(false));
+                .then((d) => {if (!cancelled) setData(d); })
+                .catch((e) => { console.error(e); if (!cancelled) setError(true); })
+                .finally(() => { if (!cancelled) setLoading(false); });
+            return() => { cancelled = true; };
         }, [year, round, driver]);
 
         if (loading) return <p>Loading...</p>;
-        if (!data) return <p>No data</p>;
+        if (error || !data) return <p>Data not available for this race</p>;
+        if (data.telemetry.length == 0) return <p>No telemetry available for this driver</p>;
 
         const lineColor = driverData?.find((d) => d.Abbreviation === driver)?.TeamColor ?? "var(--accent-fastest)"; 
         const config = VIEW_CONFIG[viewMode];

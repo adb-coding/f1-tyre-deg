@@ -3,6 +3,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { getTyreDegradation } from "../api/client";
 import type { DegradationResult, DriverPoint } from "../types/f1";
 import { BoxplotChart } from "./BoxPlotChart";
+import { COMPOUND_COLOR } from "./compounds";
 import { Activity, Timer, MoveDownRight, CirclePause } from "lucide-react";
 
 
@@ -20,15 +21,24 @@ export function TyreDegradationChartSingle({ year, round, driver, driverData }
     // const [results, setResults] = useState<Record<string, DegradationResult> | null>(null);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<ViewMode>('Lap Time')
+    const [error, setError] = useState(false);
 
-    const COMPOUND_COLOR: Record<string, string> = {
-        SOFT: "var(--compound-soft)",
-        MEDIUM: "var(--compound-medium)",
-        HARD: "var(--compound-hard)",
-    };
+    useEffect(() => {
+        let cancelled = false;
+        setLoading(true);
+        setData(null);
+        setError(false);
+        getTyreDegradation(year, round, driver)
+            .then((d) => { if (!cancelled) setData(d); })
+            .catch((e) => { console.error(e); if (!cancelled) setError(true); })
+            .finally(() => { if (!cancelled) setLoading(false); });
+        return () => { cancelled = true; };
+    }, [year, round, driver])
+    
+    if (loading) return <p>Loading...</p>;
+    if (!data) return <p>Data not available for this race</p>;
 
     const compunds = Array.from(new Set(data?.points.map((p) => p.compound)));
-
 
     function formatLapTime(totalSeconds: number): string {
         const minutes = Math.floor(totalSeconds / 60);
@@ -36,13 +46,11 @@ export function TyreDegradationChartSingle({ year, round, driver, driverData }
         return `${minutes}:${seconds.padStart(6, "0")}`;
     }
 
-    useEffect(() => {
-        setLoading(true);
-        getTyreDegradation(year, round, driver).then(setData).finally(() => setLoading(false));
-    }, [year, round, driver]);
+    // useEffect(() => {
+    //     setLoading(true);
+    //     getTyreDegradation(year, round, driver).then(setData).finally(() => setLoading(false));
+    // }, [year, round, driver]);
     
-    if (loading) return <p>Loading...</p>;
-    if (!data) return <p>No data</p>;
 
     
     const stintCompound: Record<number, string> = {};

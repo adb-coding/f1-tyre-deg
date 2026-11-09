@@ -7,6 +7,7 @@ import type { SessionInfo, DriverPoint, DegradationResult, CachedRaces } from ".
 import { getCachedRaces, getDriverPoint, getSessionData, getTyreDegradation } from "./api/client";
 import { RightSideBar } from "./components/RightSideBar";
 import { TopBar } from "./components/TopBar";
+import { Footer } from "./components/Footer";
 import { DriverMultiSelect } from "./components/DriverMultiSelect";
 
 function App() {
@@ -22,29 +23,48 @@ function App() {
     const [driverData, setDriverData] = useState<DriverPoint[] | null>(null);
     const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
     const [races, setRaces] = useState<CachedRaces | null>(null); 
+    const [dataError, setDataError] = useState(false);
     // const [data, setData] = useState<DegradationResult | null>(null);
 
     
         useEffect(() => {
             let cancelled = false;
             setData(null);
-            getTyreDegradation(year, round, driver).then((d) => { if (!cancelled) setData(d); });
+            setDataError(false);
+            getTyreDegradation(year, round, driver)
+                .then((d) => { if (!cancelled) setData(d); })
+                .catch((e) => { console.error(e); if (!cancelled) setDataError(true); });
             return () => { cancelled = true; }; 
         }, [year, round, driver]);
         
         useEffect(() => {
-            getDriverPoint(year, round).then(setDriverData);
+            let cancelled = false;
+            getDriverPoint(year, round)
+                .then((d) => { if (!cancelled) setDriverData(d); })
+                .catch((e) => { console.error(e); if (!cancelled) setDataError(true); });
+            return () => { cancelled = true; };
         }, [year, round]);
 
         useEffect(() => {
             let cancelled = false;
             setSessionInfo(null);
-            getSessionData(year, round).then((d) => { if (!cancelled) setSessionInfo(d); });
+            getSessionData(year, round)
+                .then((d) => { if (!cancelled) setSessionInfo(d); })
+                .catch((e) => { console.error(e); if (!cancelled) setDataError(true); });
             return () => { cancelled = true; };
         }, [year, round]);
 
         useEffect(() => {
-            getCachedRaces().then(setRaces);
+            let cancelled = false;
+            getCachedRaces()
+                .then((r) => {if (!cancelled) return;
+                    setRaces(r);
+                    const lastYear = Math.max(...Object.keys(r).map(Number));
+                    const lastRound = Math.max(...(r[String(lastYear)] ?? []).map((x) => round));
+                    if (Number.isFinite(lastRound)) {setYear(lastYear); setRound(lastRound); }
+                 })
+                .catch((e) => { console.error(e); if (!cancelled) setDataError(true); });
+            return () => { cancelled = true; };
         }, []);
 
         function handleYearChange(y: number) {
@@ -82,7 +102,7 @@ function App() {
                         <SidebarRace races={races} year={year} round={round} onYearChange={handleYearChange} onRoundChange={setRound}/>
                         <div className="toggle-group">
                             <button className={`toggle-btn ${mode === "single" ? "toggle-btn--active" : ""}`} onClick={() => setMode("single")}>Single</button>
-                            <button className={`toggle-btn ${mode === "compare" ? "toggle-btn--active" : ""}`} onClick={() => setMode("compare")}>Compare</button>
+                            <button className={`toggle-btn ${mode === "compare" ? "toggle-btn--active" : ""}`} onClick={() => setMode("compare")} style={{ marginRight: "8px"}}>Compare</button>
                         </div>
                         {mode === "single" ? (
                             <SidebarDriver driverData={driverData} selectedDriver={driver} onSelectDriver={setDriver}/>
@@ -114,6 +134,7 @@ function App() {
                     </>
                 )}
             </div>
+            <Footer />
         </div>
     );
 }
