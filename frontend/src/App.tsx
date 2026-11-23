@@ -57,7 +57,7 @@ function App() {
         useEffect(() => {
             let cancelled = false;
             getCachedRaces()
-                .then((r) => {if (!cancelled) return;
+                .then((r) => {if (cancelled) return;
                     setRaces(r);
                     const lastYear = Math.max(...Object.keys(r).map(Number));
                     const lastRound = Math.max(...(r[String(lastYear)] ?? []).map((x) => x.round));
