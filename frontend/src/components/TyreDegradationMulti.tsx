@@ -123,7 +123,7 @@ function mergePositionsByLap(results: Record<string, DegradationResult>): Record
                                 {slope === null ? "n/a" : `${slope >= 0 ? "+" : ""}${slope.toFixed(3)} s/lap`}
                             </span>
                             </div>
-                            ))};
+                            ))}
                     </div> 
                     <div className="stat-card">
                         <span className="stat-card__label"><CirclePause size="18px"/> Number of stints</span>
