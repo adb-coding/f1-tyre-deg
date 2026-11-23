@@ -23,7 +23,7 @@ function App() {
     const [driverData, setDriverData] = useState<DriverPoint[] | null>(null);
     const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
     const [races, setRaces] = useState<CachedRaces | null>(null); 
-    const [dataError, setDataError] = useState(false);
+    const [, setDataError] = useState(false);
     // const [data, setData] = useState<DegradationResult | null>(null);
 
     
@@ -60,7 +60,7 @@ function App() {
                 .then((r) => {if (!cancelled) return;
                     setRaces(r);
                     const lastYear = Math.max(...Object.keys(r).map(Number));
-                    const lastRound = Math.max(...(r[String(lastYear)] ?? []).map((x) => round));
+                    const lastRound = Math.max(...(r[String(lastYear)] ?? []).map((x) => x.round));
                     if (Number.isFinite(lastRound)) {setYear(lastYear); setRound(lastRound); }
                  })
                 .catch((e) => { console.error(e); if (!cancelled) setDataError(true); });

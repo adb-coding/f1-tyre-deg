@@ -76,7 +76,7 @@ function mergePositionsByLap(results: Record<string, DegradationResult>): Record
     }, [year, round, drivers]);
     
     if (loading) return <p>Loading...</p>;
-    if (!results) return <p>Data not available for this race</p>;
+    if (error || !results) return <p>Data not available for this race</p>;
     
     const mergedLaps = mergeLapsByNumber(results);
     const driverCode = Object.keys(results);

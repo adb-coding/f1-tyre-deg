@@ -41,7 +41,7 @@ export function TelemetryChartMulti({ year, round, drivers, driverData}:{ year: 
     }, [year, round, drivers]);
 
     if (loading) return <p>Loading...</p>
-    if (!results) return <p>No data</p>
+    if (error || !results) return <p>No data</p>
 
     const config = VIEW_CONFIG[viewMode];
 

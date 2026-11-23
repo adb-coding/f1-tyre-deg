@@ -36,7 +36,7 @@ export function TyreDegradationChartSingle({ year, round, driver, driverData }
     }, [year, round, driver])
     
     if (loading) return <p>Loading...</p>;
-    if (!data) return <p>Data not available for this race</p>;
+    if (error || !data) return <p>Data not available for this race</p>;
 
     const compunds = Array.from(new Set(data?.points.map((p) => p.compound)));
 
