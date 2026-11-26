@@ -26,11 +26,13 @@ The backend is responsible for data retrieval, tyre degradation modeling, and AP
 *   **Processing Language:** Python (pandas / scikit-learn for data manipulation and regression).
 *   **API Framework:** FastAPI, utilizing Pydantic for data validation and serialization.
 *   **Endpoints** live under `/api/...`:
+    * `GET /` - Service health satus
     * `GET /api/tyre-degradation` - degradation, telemetry, corner positions, race positions for one driver 
     * `POST /api/tyre-degradation/multi` - the  same data for several drivers
     * `GET /api/driver-data` - driver list with team colours
     * `GET /api/session-info` - race info, weather and results
     * `GET /api/rounds-list` - the races available in the cacche, grouped by year, with their round numbers
+    * `POST /api/gap` - Lap-by-lap time gap calculations relative to the highest-finishing driver of the comparison.
 
 #### Tyre Degradation Model
 
@@ -51,40 +53,55 @@ F1's live-timing servers block requests coming from cloud IP addreses, so a VM c
 
 The backend is structured in this form
 ```
-├── app
+backend/
+├── app/
 │   ├── main.py                 # Entry point: orchestrates FastAPI/Pydantic calls
 │   ├── save_cached.py          # Script for saving race data to the cache
-│   └── services
+│   └── services/
 │       ├── f1_data.py          # Handles FastF1 API data retrieval and helper functions
 │       └── tyre_analysis.py    # Contains the Pydantic models and constructs the data for the frontend
-└── cache
+└── cache/ 
 ```
 
 
 ### Frontend Architecture
 
-The frontend is built using **React** and **Typescript**, with **Recharts** for the charts. It communicates with the backend via standard HTTP requests to the FastAPI endpoints
+The frontend is built using **React** and **Typescript**, and **Vite**, styled with responsive custom CSS, using **Recharts** for the charts and **Lucide React** for UI iconography. It communicates with the backend via standard HTTP requests to the FastAPI endpoints
 **Key Functionalities:**
-1.  **Stint Analysis:** Allows users to analyze specific driver stints, visualizing tyre consumption based on compound, race strategy, and lap times.
-2.  **Comparison Mode:** Enables the comparison of adjusted lap times across two or more drivers over the race duration.
-3.  **Telemetry Analysis:** Dedicated views to analyze key telemetry metrics (speed, gears, throttle, and engine RPM) for the fastest laps of selected drivers.
-4.  **Contextual Display:** A persistent right sidebar displaying relevant Grand Prix information and the race track.
+1.  **Stint Driver Analysis Mode:** 
+    * **Tyre Degradation View:** Scatter plot of fuel-corrected lap times against tyre life, grouped and color-coded by compound.
+    * **Lap Time View:** Lap time progression per compound across the entire race.
+    * **Distribution View:** Custom SVG Box Plot chart showing lap time distributions (median, Q1, Q3, whiskers, and fliers/outliers) per tyre compound.
+    * **Race History View:** Lap-by-lap position chart tracking driver track progression (P1-P20).
+    * **Single-Driver Telemetry View:** Synchronized telemetry traces (Speed, Gear, Throttle, RPM) aligned by track distance, overlaid with dashed vertical reference lines for each circuit corner (`T1`, `T2`, etc.)
+2.  **Multi-Driver Comparison Mode:** 
+     * **Tyre Degradation View:** Cross-driver degradation comparison with hover-highlighting on legend entries.
+    * **Lap Time Comparison:** Direct lap-by-lap pace overlay for all selected drivers.
+    * **Gap View:** Relative lap delta chart displaying time gaps against the leading reference driver.
+    * **Race History View:** Simultaneous multi-car position tracking across race laps.
+    * **Multi-Driver Telemetry View:** Side-by-side overlay of fastest-lap telemetry across selected drivers for all four telemetry channels.
+    * **Weighted Metric Cards:** Computes average lap time, fastest lap, stint breakdowns with compound badges (e.g. `M15`, `H20`), and weighted degradation coefficients ($\ge 5$ clean laps).
+3. **Contextual Sidebar & Responsive UI:**
+   * **Collapsible Sidebars:** Responsive left and right sidebars with mobile hamburger/panel toggles and backdrops.
+   * **Right Sidebar:** Displays session details, average ambient and track temperatures, top-10 official race classifications, and a 2D track map rendered from telemetry coordinates.
 
 
->[!WARNING] The multi-driver comparison functionality is still under active development, as the *Distribution* view is not implemented for multiple drivers. 
 
 
 #### Frontend Folder Structure
 
 
 ```
-├── src
+frontend/
+├── src/
 │   ├── App.tsx
 │   ├── api
 │   │   └── client.ts
-│   ├── components
+│   ├── components/
 │   │   ├── BoxPlotChart.tsx
+│   │   ├── compounds.ts
 │   │   ├── DriverMultiSelect.tsx
+│   │   ├── Footer.tsx
 │   │   ├── RightSideBar.tsx
 │   │   ├── SideBar.tsx
 │   │   ├── TelemetryCharts.tsx
@@ -94,10 +111,10 @@ The frontend is built using **React** and **Typescript**, with **Recharts** for 
 │   │   ├── TyreDegradationCharts.tsx
 │   │   ├── TyreDegradationMulti.tsx
 │   │   └── TyreDegradationSingle.tsx
+│   ├── types/
+│   │   └── f1.ts
 │   ├── index.css
 │   ├── main.tsx
-│   ├── types
-│   │   └── f1.ts
 ```
 
 
@@ -138,7 +155,7 @@ To replicate this project and test it on your machine follow these steps
     uv run uvicorn app.main:app --reload --port 8000
     ```
 
-    Test the connection by either visiting `localhost:8000`, by using FastAPI UI at `127.0.0.1:8000/docs/` or through the terminal using 
+    Verify the connection by either visiting `localhost:8000`, by using FastAPI UI at `127.0.0.1:8000/docs/` or through the terminal using 
     ```
     curl http://localhost:8000/api/rounds-list 
     ```
@@ -169,3 +186,8 @@ The computations are mere estimations, that come from semplifications of real ra
 
 This project was therfore carried to train on my data analysis skills and the capacity to produce a full stack application in a relative short time. 
 
+## License
+
+This project is a fan based project, and is not affiliated in any way to Formula 1 or any ot its brands and products. 
+
+The software is provided under a [MIT](/LICENSE.md) License.
